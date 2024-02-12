@@ -25,6 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--outdir", default="output", help="Directory for saving output depth in.")
     parser.add_argument("-s", "--scene", default="alley_2", help="The name of the MPI Sintel scene to run the method on.")
     parser.add_argument("--save_numpy", action="store_true", help="Save the processed depthmaps as Numpy files.")
+    parser.add_argument("--save_viz", action="store_true", help="Save viz.")
     
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--demo', action='store_true', help="Run the method on the provided demo data.")
@@ -65,7 +66,12 @@ if __name__ == "__main__":
 
     output_frames = []
     
+    np_list = []
+    scan = "scene0707_00"
+    method = "dpt_tocd"
     for batch, sample in enumerate(tqdm(dataloader)):
+        if batch > 10:
+            break
         torch.cuda.empty_cache()
         
         pcupdater.update( sample['rgb'].to(device),
@@ -78,19 +84,23 @@ if __name__ == "__main__":
         if batch == 0:
             mn, mx = torch.quantile(depth_out[depth_out > 0], 0.05), torch.quantile(depth_out[depth_out > 0], 0.95)
 
-        depth_comparison_rgb = imutils.np2png_d( [ sample['depth'].view(h, w).cpu().numpy(),
-                                                   depth_out.view(h, w).cpu().numpy() ],
-                                                 fname=None,
-                                                 vmin=mn,
-                                                 vmax=mx )
+        if args.save_viz:
+            depth_comparison_rgb = imutils.np2png_d( [ sample['depth'].view(h, w).cpu().numpy(),
+                                                       depth_out.view(h, w).cpu().numpy() ],
+                                                     fname=None,
+                                                     vmin=mn,
+                                                     vmax=mx )
 
-        output = np.concatenate( (sample['rgb'].squeeze(0).permute(1, 2, 0).cpu().numpy(),
-                                  depth_comparison_rgb), 1 )
-        output_frames.append( (output * 255).astype(np.uint8) )
-        imutils.np2png( [ output ], os.path.join( args.outdir, '%.04d.png' % batch ))
+            output = np.concatenate( (sample['rgb'].squeeze(0).permute(1, 2, 0).cpu().numpy(),
+                                      depth_comparison_rgb), 1 )
+            output_frames.append( (output * 255).astype(np.uint8) )
+            imutils.np2png( [ output ], os.path.join( args.outdir, '%.04d.png' % batch ))
 
         if args.save_numpy:
-            np.save(os.path.join( args.outdir, '%.04d.npy' % batch), depth_out.numpy())
+            np_list.append( depth_out.numpy() )
+    
+    if args.save_numpy:
+        np.save(os.path.join( args.outdir, f"{method}_{scan}"), np_list)
 
-    video_clip = ImageSequenceClip(output_frames, fps=15)
-    video_clip.write_videofile( os.path.join(args.outdir, 'output.mp4'), verbose=False, codec='mpeg4', logger=None, bitrate='2000k')
+    # video_clip = ImageSequenceClip(output_frames, fps=15)
+    # video_clip.write_videofile( os.path.join(args.outdir, 'output.mp4'), verbose=False, codec='mpeg4', logger=None, bitrate='2000k')

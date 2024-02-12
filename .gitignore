@@ -17,3 +17,10 @@ __pycache__
 *.tar
 *.tgz
 *.mov
+outputs/*
+output/*
+RAFT-Stereo/*
+DPT/*
+
+
+
