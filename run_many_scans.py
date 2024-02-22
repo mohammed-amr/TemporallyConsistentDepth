@@ -56,6 +56,8 @@ if __name__ == "__main__":
         
         monocular_depth = DPTWrapper(model_path='./DPT/weights/dpt_hybrid-midas-501f0c75.pt')
 
+        # depth_estimator = monocular_depth
+        
         dataset = ScanNetDataset(
             rootdir=args.scannet_path, 
             scan=scan,
@@ -67,7 +69,7 @@ if __name__ == "__main__":
             dataset=dataset,
             batch_size=1,
             shuffle=False,
-            num_workers=4,
+            # num_workers=1,
         )
         
         pcupdater = PCUpdate(h, w, device)
@@ -84,7 +86,21 @@ if __name__ == "__main__":
             
             
             
-
+            # # Estimate a monocular depth map
+            # inv_depth_mono = depth_estimator(rgb_numpy) 
+            # inv_depth_mono = F.interpolate( torch.from_numpy(inv_depth_mono).unsqueeze(0).unsqueeze(0).float(),
+            #                                 (self.ho, self.wo),
+            #                                 mode='nearest').squeeze(0)
+            # #
+            # # Scale monocular depth map
+            # mask_scaling = depth_scaling > 1e-5
+            # inv_depth_scaling = 1 / depth_scaling
+            # inv_depth_scaling[~mask_scaling] = 0
+            # inv_depth_scaled, _, _ = utils.scale_depth( inv_depth_mono,
+            #                                             inv_depth_scaling,
+            #                                             mask_scaling )
+            # depth_scaled = (1 / inv_depth_scaled) 
+            # depth_cleaned = utils.clean_depth_edges(depth_scaled.squeeze(0)).unsqueeze(0)
             
             pcupdater.update( sample['rgb'].to(device),
                             sample['depth'].to(device),
