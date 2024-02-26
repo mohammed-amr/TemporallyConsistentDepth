@@ -39,7 +39,7 @@ def get_valid_frames(scan_root: str, scan_name: str):
     dist_to_last_valid_frame = 0
     bad_file_count = 0
     valid_frames = []
-    for frame_id in range(color_file_count):
+    for frame_id in range(1, color_file_count):
         # for a frame to be valid, we need a valid pose and a valid
         # color frame.
 
