@@ -55,14 +55,9 @@ if __name__ == "__main__":
     for scan in scans:
         scan_keyframes = [int(tuple.split(" ")[1]) for tuple in tuples if tuple.split(" ")[0].strip() == scan]
         
-        monocular_depth = DPTWrapper(model_path='./DPT/weights/dpt_hybrid-midas-501f0c75.pt')
-
-        # depth_estimator = monocular_depth
-        
         dataset = ScanNetSRDataset(
             rootdir=args.scannet_path, 
             scan=scan,
-            depth_estimator=monocular_depth,
             scannet_sr_path=args.scannet_sr_path,
             output_height=h, 
             output_width=w
