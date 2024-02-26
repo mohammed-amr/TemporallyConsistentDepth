@@ -75,27 +75,13 @@ class ScanNetSRDataset(Dataset):
         depth_scaling = F.interpolate(torch.tensor(depth_scaling).unsqueeze(0).unsqueeze(0), (self.ho, self.wo),
                                       mode='nearest').squeeze(0).float()
 
-        # Estimate a monocular depth map
-        # inv_depth_mono_dpt = self.depth_estimator(rgb_numpy)
-        # inv_depth_mono_dpt = F.interpolate(torch.from_numpy(inv_depth_mono_dpt).unsqueeze(0).unsqueeze(0).float(),
-        #                                    (self.ho, self.wo),
-        #                                    mode='nearest').squeeze(0)
+        # Load SR frames
 
         depth_mono_sr = objects_sr[0]['depth_pred_s0_b1hw'].cpu()
         depth_mono_sr = F.interpolate(depth_mono_sr,
                                       (self.ho, self.wo),
                                       mode='nearest').squeeze(0)
         inv_depth_mono_sr = 1 / depth_mono_sr
-        #
-        # Scale monocular depth map
-        # mask_scaling = depth_scaling > 1e-5
-        # inv_depth_scaling = 1 / depth_scaling
-        # inv_depth_scaling[~mask_scaling] = 0
-        # inv_depth_scaled, _, _ = utils.scale_depth(inv_depth_mono_dpt,
-        #                                            inv_depth_scaling,
-        #                                            mask_scaling)
-        # depth_scaled = (1 / inv_depth_scaled)
-        # depth_cleaned = utils.clean_depth_edges(depth_scaled.squeeze(0)).unsqueeze(0)
 
         # Scale monocular depth map
         mask_scaling = depth_scaling > 1e-5

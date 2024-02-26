@@ -115,24 +115,32 @@ if __name__ == "__main__":
                 mn, mx = torch.quantile(depth_out[depth_out > 0], 0.05), torch.quantile(depth_out[depth_out > 0], 0.95)
 
             if args.save_viz:
-                depth_comparison_rgb = imutils.np2png_d( [ sample['depth'].view(h, w).cpu().numpy(),
-                                                        depth_out.view(h, w).cpu().numpy() ],
+                depth_comparison_rgb = imutils.np2png_d([sample['depth'].view(h, w).cpu().numpy(),
+                                                         depth_out.view(h, w).cpu().numpy()],
                                                         fname=None,
                                                         vmin=mn,
-                                                        vmax=mx )
+                                                        vmax=mx)
 
-                output = np.concatenate( (sample['rgb'].squeeze(0).permute(1, 2, 0).cpu().numpy(),
-                                        depth_comparison_rgb), 1 )
-                output_frames.append( (output * 255).astype(np.uint8) )
-                imutils.np2png( [ output ], os.path.join( args.outdir, '%.04d.png' % batch ))
+                output = np.concatenate((sample['rgb'].squeeze(0).permute(1, 2, 0).cpu().numpy(),
+                                         depth_comparison_rgb), 1)
+                output_frames.append((output * 255).astype(np.uint8))
+                outpath_frames = os.path.join(output_dir, f"{scan}")
+
+                if not os.path.exists(outpath_frames):
+                    # Create a new directory because it does not exist
+                    os.makedirs(outpath_frames)
+                    print("The new directory is created!")
+
+                imutils.np2png([output], os.path.join(outpath_frames, '%.04d.png' % batch))
 
             if args.save_numpy:
                 if sample["frame_id"].item() in scan_keyframes:
                     np_list[sample["frame_id"].item()] = depth_out.numpy()
-        
+
         if args.save_numpy:
-            np.save(os.path.join( output_dir, f"{scan}"), np_list)
+            np.save(os.path.join(output_dir, f"{scan}"), np_list)
 
         if args.save_viz:
             video_clip = ImageSequenceClip(output_frames, fps=15)
-            video_clip.write_videofile( os.path.join(args.outdir, 'output.mp4'), verbose=False, codec='mpeg4', logger=None, bitrate='2000k')
+            video_clip.write_videofile(os.path.join(output_dir, f"{scan}.mp4"), verbose=False, codec='mpeg4',
+                                       logger=None, bitrate='2000k')
