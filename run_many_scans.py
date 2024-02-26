@@ -10,9 +10,8 @@ from pathlib import Path
 import torch
 import numpy as np
 import argparse
-from datasets.scannet import ScanNetDataset
-from datasets.colmap import ColmapDataset
-from datasets.mpisintel import MPISintelDataset
+from datasets.scannet_sr import ScanNetSRDataset
+
 from torch.utils.data import DataLoader
 from moviepy.editor import ImageSequenceClip
 from dpt_wrapper import DPTWrapper
@@ -24,11 +23,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--scannet_path", help="Base directory of ScanNet test scans.")
+    parser.add_argument("--scannet_sr_path", help="Base directory of ScanNet frames processed with SR")
     parser.add_argument("--scans_list_path", help="Scans list.")
     parser.add_argument("--tuple_file_path", help="path to test tuple indices to save.")
     parser.add_argument("--outdir", default="output", help="Directory for saving output depth in.")
     parser.add_argument("--save_numpy", action="store_true", help="Save the processed depthmaps as Numpy files.")
     parser.add_argument("--save_viz", action="store_true", help="Save viz.")
+
     
     args = parser.parse_args()
 
@@ -58,10 +59,11 @@ if __name__ == "__main__":
 
         # depth_estimator = monocular_depth
         
-        dataset = ScanNetDataset(
+        dataset = ScanNetSRDataset(
             rootdir=args.scannet_path, 
             scan=scan,
-            depth_estimator=monocular_depth, 
+            depth_estimator=monocular_depth,
+            scannet_sr_path=args.scannet_sr_path,
             output_height=h, 
             output_width=w
         )
