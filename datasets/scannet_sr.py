@@ -21,14 +21,13 @@ import utils.utils as utils
 
 
 class ScanNetSRDataset(Dataset):
-    def __init__(self, rootdir, scan, depth_estimator, scannet_sr_path, output_height=484, output_width=684):
+    def __init__(self, rootdir, scan, scannet_sr_path, output_height=484, output_width=684):
         super(ScanNetSRDataset, self).__init__()
 
         self.scan_path = os.path.join(rootdir, scan)
         self.ho, self.wo = output_height, output_width
         self.scannet_sr_path = os.path.join(scannet_sr_path, 'scannet', 'dense', 'depths', scan)
 
-        self.depth_estimator = depth_estimator
 
         # Replace the following line with any desired monocular depth estimator.
         # Our method has been tested with DPT, and uses it by default. 
