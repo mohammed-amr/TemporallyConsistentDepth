@@ -28,10 +28,6 @@ class ScanNetSRDataset(Dataset):
         self.ho, self.wo = output_height, output_width
         self.scannet_sr_path = os.path.join(scannet_sr_path, 'scannet', 'dense', 'depths', scan)
 
-
-        # Replace the following line with any desired monocular depth estimator.
-        # Our method has been tested with DPT, and uses it by default. 
-
         self.valid_frames_ids = get_valid_frames(self.scan_path, scan)
 
         self.image_paths = glob.glob(self.scan_path + "/sensor_data/frame-*.color.jpg")
@@ -68,11 +64,11 @@ class ScanNetSRDataset(Dataset):
                 except EOFError:
                     break
 
-        depth_scaling = cv2.imread(os.path.join(self.scan_path, f"sensor_data/frame-{frame_id:06d}.depth.png"),
-                                   cv2.IMREAD_UNCHANGED) / 1000.
-
-        depth_scaling = F.interpolate(torch.tensor(depth_scaling).unsqueeze(0).unsqueeze(0), (self.ho, self.wo),
-                                      mode='nearest').squeeze(0).float()
+        # depth_scaling = cv2.imread(os.path.join(self.scan_path, f"sensor_data/frame-{frame_id:06d}.depth.png"),
+        #                            cv2.IMREAD_UNCHANGED) / 1000.
+        #
+        # depth_scaling = F.interpolate(torch.tensor(depth_scaling).unsqueeze(0).unsqueeze(0), (self.ho, self.wo),
+        #                               mode='nearest').squeeze(0).float()
 
         # Load SR frames
 
@@ -82,9 +78,19 @@ class ScanNetSRDataset(Dataset):
                                       mode='nearest').squeeze(0)
         inv_depth_mono_sr = 1 / depth_mono_sr
 
+        # # Scale monocular depth map
+        # mask_scaling = depth_scaling > 1e-5
+        # inv_depth_scaling = 1 / depth_scaling
+        # inv_depth_scaling[~mask_scaling] = 0
+        # inv_depth_scaled_sr, _, _ = utils.scale_depth(inv_depth_mono_sr,
+        #                                            inv_depth_scaling,
+        #                                            mask_scaling)
+        # depth_scaled_sr = (1 / inv_depth_scaled_sr)
+        # depth_cleaned_sr = utils.clean_depth_edges(depth_scaled_sr.squeeze(0)).unsqueeze(0)
+
         # Scale monocular depth map
-        mask_scaling = depth_scaling > 1e-5
-        inv_depth_scaling = 1 / depth_scaling
+        mask_scaling = depth_mono_sr > 1e-5
+        inv_depth_scaling = 1 / depth_mono_sr
         inv_depth_scaling[~mask_scaling] = 0
         inv_depth_scaled_sr, _, _ = utils.scale_depth(inv_depth_mono_sr,
                                                    inv_depth_scaling,
