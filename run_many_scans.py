@@ -73,33 +73,15 @@ if __name__ == "__main__":
         
         output_frames = []
         np_list = {}
-        method = "dpt_tocd"
+        method = "sr_tocd"
         output_dir = (Path(args.outdir) / f"{method}")
         output_dir.mkdir(exist_ok=True)
         for batch, sample in enumerate(tqdm(dataloader)):
 
             
             torch.cuda.empty_cache()
-            
-            
-            
-            # # Estimate a monocular depth map
-            # inv_depth_mono = depth_estimator(rgb_numpy) 
-            # inv_depth_mono = F.interpolate( torch.from_numpy(inv_depth_mono).unsqueeze(0).unsqueeze(0).float(),
-            #                                 (self.ho, self.wo),
-            #                                 mode='nearest').squeeze(0)
-            # #
-            # # Scale monocular depth map
-            # mask_scaling = depth_scaling > 1e-5
-            # inv_depth_scaling = 1 / depth_scaling
-            # inv_depth_scaling[~mask_scaling] = 0
-            # inv_depth_scaled, _, _ = utils.scale_depth( inv_depth_mono,
-            #                                             inv_depth_scaling,
-            #                                             mask_scaling )
-            # depth_scaled = (1 / inv_depth_scaled) 
-            # depth_cleaned = utils.clean_depth_edges(depth_scaled.squeeze(0)).unsqueeze(0)
-            
-            pcupdater.update( sample['rgb'].to(device),
+
+            pcupdater.update(sample['rgb'].to(device),
                             sample['depth'].to(device),
                             sample['pose_w2c'].to(device),
                             sample['K'].to(device) )
@@ -109,33 +91,35 @@ if __name__ == "__main__":
             if batch == 0:
                 mn, mx = torch.quantile(depth_out[depth_out > 0], 0.05), torch.quantile(depth_out[depth_out > 0], 0.95)
 
-            if args.save_viz:
-                depth_comparison_rgb = imutils.np2png_d([sample['depth'].view(h, w).cpu().numpy(),
-                                                         depth_out.view(h, w).cpu().numpy()],
-                                                        fname=None,
-                                                        vmin=mn,
-                                                        vmax=mx)
+            # if args.save_viz:
+            #     depth_comparison_rgb = imutils.np2png_d([sample['depth'].view(h, w).cpu().numpy(),
+            #                                              depth_out.view(h, w).cpu().numpy()],
+            #                                             fname=None,
+            #                                             vmin=mn,
+            #                                             vmax=mx)
+            #
+            #     output = np.concatenate((sample['rgb'].squeeze(0).permute(1, 2, 0).cpu().numpy(),
+            #                              depth_comparison_rgb), 1)
+            #     output_frames.append((output * 255).astype(np.uint8))
+            outpath_frames = os.path.join(output_dir, f"{scan}")
+            #
+            if not os.path.exists(outpath_frames):
+                # Create a new directory because it does not exist
+                os.makedirs(outpath_frames)
+                print("The new directory is created!")
+            #
+            #     imutils.np2png([output], os.path.join(outpath_frames, '%.04d.png' % batch))
 
-                output = np.concatenate((sample['rgb'].squeeze(0).permute(1, 2, 0).cpu().numpy(),
-                                         depth_comparison_rgb), 1)
-                output_frames.append((output * 255).astype(np.uint8))
-                outpath_frames = os.path.join(output_dir, f"{scan}")
+            # if args.save_numpy:
+            #     if sample["frame_id"].item() in scan_keyframes:
+            #         np_list[sample["frame_id"].item()] = depth_out.numpy()
+            filename = os.path.join(output_dir, scan, f"{sample['frame_id'].item()}.npy")
+            np.save(filename, depth_out.numpy())
 
-                if not os.path.exists(outpath_frames):
-                    # Create a new directory because it does not exist
-                    os.makedirs(outpath_frames)
-                    print("The new directory is created!")
+        # if args.save_numpy:
+        #     np.save(os.path.join(output_dir, f"{scan}"), np_list)
 
-                imutils.np2png([output], os.path.join(outpath_frames, '%.04d.png' % batch))
-
-            if args.save_numpy:
-                if sample["frame_id"].item() in scan_keyframes:
-                    np_list[sample["frame_id"].item()] = depth_out.numpy()
-
-        if args.save_numpy:
-            np.save(os.path.join(output_dir, f"{scan}"), np_list)
-
-        if args.save_viz:
-            video_clip = ImageSequenceClip(output_frames, fps=15)
-            video_clip.write_videofile(os.path.join(output_dir, f"{scan}.mp4"), verbose=False, codec='mpeg4',
-                                       logger=None, bitrate='2000k')
+        # if args.save_viz:
+        #     video_clip = ImageSequenceClip(output_frames, fps=15)
+        #     video_clip.write_videofile(os.path.join(output_dir, f"{scan}.mp4"), verbose=False, codec='mpeg4',
+        #                                logger=None, bitrate='2000k')
